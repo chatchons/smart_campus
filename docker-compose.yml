@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  
+  #PostgreSQL Database for the application
+  smart-campus-db:
+    image: "postgres:13.4-alpine3.14"
+    container_name: smart-campus-db
+    #Volume mounted for database with the storage
+    volumes: 
+      - ./smart-campus-db:/var/lib/PostgreSQL
+    ports: 
+      - 5432:5432 #forword the exposed port 5432 in the container to port 5432 on the host machine
+    #Environment variable for DB name , user and password
+    environment: 
+      - POSTGRES_USER: smart_campus
+      - POSTGRES_PASSWORD: N2a*dqTvMru3E8&j
+      - POSTGRES_DB: smart_campus
+
+  #Redis for the application
+  smart-campus-redis:
+    image: "redis:6.2.5-alpine"
+    container_name: smart-campus-redis
+    hostname: smart-campus-redis
+    #Volume mounted for database with the storage
+    volumes: 
+      - ./smart-campus-redis:/data
+    ports:
+      - "6380:6380"
+    expose:
+      - "6380"
+    restart: always
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    
+  #Back-end Spring Boot Application
+  smart-campus-backend:
+    #the docker file in smart_campus_backend build the jar and provides docker image with the following name.
+    build: ./smart-campus-backend
+    container_name: smart-campus-backend
+
+    #Environment variable for Spring Boot Application
+    environment: 
+      - DB_SERVER: smart-campus-db
+      - POSTGRES_USER: smart_campus
+      - POSTGRES_PASSWORD: N2a*dqTvMru3E8&j
+      - POSTGRES_DB: smart_campus
+    ports: 
+      - 8080:8080 #Forword the exposed port 8080 on the container to port 8080 on the host machine
+    depends_on: 
+      - smart-campus-db
+      - smart-campus-redis
+    links: smart-campus-db
+
+  #Font-end Angular Application
+  smart-campus-fontend :
+    #the docker file in smart_campus_fontend build angula and provide docker image with the following name.
+    build: ./smart-campus-fontend
+    container_name: smart-campus-fontend
+    ports: 
+      - 4200:80
+    depends_on: 
+      - smart-campus-db
+      - smart-campus-backend
+    links: 
+      - smart-campus-backend
+
+#Volumes for DB data
+volumes: 
+  smart-campus-db:
+  smart-campus-redis:
